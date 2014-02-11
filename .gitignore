@@ -1,0 +1,10 @@
+project/project
+tmp
+logs/*.log
+dist/
+.history
+*sublime*
+run.sh
+project/target
+target
+public/*

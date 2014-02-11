@@ -1,0 +1,11 @@
+# Routes
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Default path will just redirect to the computer list
+
+GET           /api/ping                       controllers.Application.ping
+## Static resources
+GET           /                               controllers.Assets.at(path="/public", file="index.html")
+GET           /public/*file                   controllers.Assets.at(path="/public", file)
