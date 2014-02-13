@@ -6,9 +6,15 @@ object Dependencies {
     val secure_social = "securesocial" %% "securesocial" % "2.1.2"
     val akka_core="com.typesafe.akka" %% "akka-actor" % "2.3.0-RC1"
     val akka_slf4j="com.typesafe.akka" %% "akka-slf4j" % "2.3.0-RC1"
+    val akka_cluster="com.typesafe.akka" %% "akka-cluster" % "2.3.0-RC1"
+    val akka_persistence="com.typesafe.akka" %% "akka-persistence-experimental" % "2.3.0-RC1"
+    val akka_contrib="com.typesafe.akka" %% "akka-contrib" % "2.3.0-RC1"
 
     val dependencies = Seq(
      akka_core
+     , akka_cluster
+     , akka_persistence
+     , akka_contrib
      , akka_slf4j
     )
   }

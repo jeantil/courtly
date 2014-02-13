@@ -13,15 +13,8 @@
         </encoder>
     </appender>
 
-    <logger name="play" level="INFO" />
-    <logger name="application" level="INFO" />
-    <logger name="application.actors" level="DEBUG" />
-    <logger name="application.models" level="INFO" />
-    <logger name="application.filters" level="INFO" />
-    <logger name="application.services" level="INFO" />
-
-    <root level="ERROR">
+    <root level="DEBUG">
         <appender-ref ref="STDOUT" />
-        <appender-ref ref="FILE" />
+        <!--<appender-ref ref="FILE" />-->
     </root>
 </configuration>
