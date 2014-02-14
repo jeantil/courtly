@@ -2,15 +2,11 @@ package actors
 
 import akka.actor.ActorSystem
 import akka.actor.ReceiveTimeout
-import akka.pattern.ask
-import akka.testkit.{ ImplicitSender, DefaultTimeout, TestKit }
 import com.typesafe.config.ConfigFactory
 import model.query._
 import model.event._
 import model.command._
 import model.domain._
-import org.scalatest._
-import scala.util.Success
 import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import akka.actor.PoisonPill
@@ -25,6 +21,7 @@ class ShortUrlRegistryTest(_system: ActorSystem) extends PersistenceSpec(_system
   def this() = this(ActorSystem("ShortUrlRegistryTest", ConfigFactory.load("test-actorsystem.conf")))
 
   override def afterAll {
+    import akka.testkit.TestKit
     TestKit.shutdownActorSystem(system)
     cleanUp
   }

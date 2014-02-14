@@ -60,6 +60,7 @@ class ShortUrlRegistry(receiveTimeout: Duration) extends EventsourcedProcessor w
 object ShortUrlRegistry {
 
   import akka.actor.Props
-
+  def path = s"/user/$name"
+  def name = "ShortUrlRegistry"
   def props(receiveTimeout: Duration = 10.minutes) = Props(new ShortUrlRegistry(receiveTimeout))
 }
