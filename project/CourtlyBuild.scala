@@ -16,20 +16,20 @@ object CourtlyBuild extends Build {
   val mygrunt =taskKey[Any]("run grunt")
   val appSettings: Seq[sbt.Setting[_]] =
     play.Project.playScalaSettings ++
-    com.tuplejump.sbt.yeoman.Yeoman.yeomanSettings ++
+//    com.tuplejump.sbt.yeoman.Yeoman.yeomanSettings ++
     buildInfoSettings ++
     Seq(
       libraryDependencies ++=Dependencies.buildDependencies
       , resolvers := Repositories.resolvers
       , yeomanGruntfile := "Gruntfile.js"
       , yeomanDirectory <<= (baseDirectory in Compile) { _ / "ui"}
-      , mygrunt := {
-         val s = streams.value
-          Process(s"grunt --gruntfile=${yeomanGruntfile.value} --force", yeomanDirectory.value) ! (s.log)
-      }
+//      , mygrunt := {
+//         val s = streams.value
+//          Process(s"grunt --gruntfile=${yeomanGruntfile.value} --force", yeomanDirectory.value) ! (s.log)
+//      }
       , testOptions in sbt.Test += Tests.Argument(TestFrameworks.Specs2, "junitxml")
-      , stage <<= stage.dependsOn(mygrunt)
-      , dist <<= dist.dependsOn(mygrunt)
+//      , stage <<= stage.dependsOn(mygrunt)
+//      , dist <<= dist.dependsOn(mygrunt)
       , play.Keys.playAssetsDirectories <+= baseDirectory / "ui/app/bower_components"
       , sourceGenerators in Compile <+= buildInfo
       , buildInfoKeys := Seq[BuildInfoKey](sbt.Keys.name, sbt.Keys.version, scalaVersion, sbtVersion)
