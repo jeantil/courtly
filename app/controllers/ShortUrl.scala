@@ -5,6 +5,7 @@ import model.command.ShortenUrl
 import model.event._
 import model.query._
 import play.api.mvc._
+import play.api.libs.json.Json
 import play.api.Logger
 import plugins.{ DomainAsker, Domain }
 import scala.concurrent.Future
@@ -26,6 +27,16 @@ abstract class ShortUrl extends Controller with PlayLogging with DomainAsker {
     (domain.shortUrlRegistry ? ResolveToken(token)) map {
       case ShortUrlNotFound        => NotFound
       case ShortUrlFound(shortUrl) => MovedPermanently(shortUrl.target)
+      case m =>
+        log.debug(s"Unable to resolve a target url for $token. Domain returned $m")
+        BadRequest
+    }
+  }
+  def stats(token: String) = Action.async { request =>
+    (domain.shortUrlRegistry ? ReadTokenStats(token)) map {
+      case UrlStatNotFound => NotFound
+      case UrlStatFound(accessCount) =>
+        Ok(Json.obj("accessCount" -> accessCount))
       case m =>
         log.debug(s"Unable to resolve a target url for $token. Domain returned $m")
         BadRequest
