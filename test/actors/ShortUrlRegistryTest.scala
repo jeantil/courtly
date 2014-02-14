@@ -76,12 +76,12 @@ class ShortUrlRegistryTest(_system: ActorSystem) extends PersistenceSpec(_system
 
     "keep access stats for each token/url" in {
       //Given
-      val expectedUrl: String = "http://newurl"
+      val expectedUrl: String = "http://newurl-stats"
       val shortUrl = shortUrlExistFor(expectedUrl)
       actorRef ! ResolveToken(shortUrl.token)
       receiveOne(msgDefaultWait)
       //When
-      actorRef ! ReadStats(shortUrl.token)
+      actorRef ! ReadTokenStats(shortUrl.token)
       val expected = receiveOne(msgDefaultWait)
       //Then
       expected should be(UrlStatFound(1))
@@ -121,7 +121,7 @@ class ShortUrlRegistryTest(_system: ActorSystem) extends PersistenceSpec(_system
       expectTerminated(tempActorRef)
       val recoveredActorRef = system.actorOf(ShortUrlRegistry.props(), name)
       //When
-      recoveredActorRef ! ReadStats(shortUrl.token)
+      recoveredActorRef ! ReadTokenStats(shortUrl.token)
       val expected = receiveOne(msgDefaultWait)
       //Then
       expected should be(UrlStatFound(1))

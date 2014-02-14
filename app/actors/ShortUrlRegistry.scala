@@ -8,7 +8,7 @@ import akka.contrib.pattern.ShardRegion.Passivate
 import concurrent.duration._
 import model.domain.ShortUrl
 import model.event._
-import model.query.ReadStats
+import model.query.ReadTokenStats
 import model.query.ResolveToken
 import model.command.ShortenUrl
 import play.api.libs.json.{ Json, JsValue }
@@ -55,7 +55,7 @@ class ShortUrlRegistry(receiveTimeout: Duration) extends EventsourcedProcessor w
         state = state.registerAccess(e)
         sender ! e
       })
-    case q @ ReadStats(token) =>
+    case q @ ReadTokenStats(token) =>
       val event = state.registeredTokens.get(token) map (su => UrlStatFound(su.accessCount)) getOrElse UrlStatNotFound
       sender ! event
     case ReceiveTimeout =>
@@ -69,10 +69,10 @@ class ShortUrlRegistry(receiveTimeout: Duration) extends EventsourcedProcessor w
   override def receiveRecover: ShortUrlRegistry#Receive = {
     case e @ ShortUrlCreated(shortUrl) =>
       log.info(s"Recovering state from event $e")
-      state.registerShortUrl(shortUrl)
+      state = state.registerShortUrl(shortUrl)
     case e @ ShortUrlFound(shortUrl) =>
       log.info(s"Recovering state from event $e")
-      state.registerAccess(e)
+      state = state.registerAccess(e)
     case s @ SnapshotOffer(metadata, snapshot: JsValue) =>
       log.info(s"Recovering state from snapshot $s")
       state = snapshot.validate[PersistentState].fold(
