@@ -10,6 +10,7 @@ import model.domain._
 import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import akka.actor.PoisonPill
+import scala.util.Random
 
 class ShortUrlRegistryTest(_system: ActorSystem) extends PersistenceSpec(_system) with Cleanup {
 
@@ -36,7 +37,7 @@ class ShortUrlRegistryTest(_system: ActorSystem) extends PersistenceSpec(_system
       actorRef ! ShortenUrl(expectedUrl)
       //Then
       expectMsgPF(msgDefaultWait) {
-        case ShortUrlCreated(ShortUrl(url, _)) => true
+        case ShortUrlCreated(ShortUrl(url, _, _)) => true
       }
     }
 
@@ -62,7 +63,7 @@ class ShortUrlRegistryTest(_system: ActorSystem) extends PersistenceSpec(_system
       expected should be(ShortUrlNotFound)
     }
 
-    "not resolve a token which has been created" in {
+    "resolve a token which has been created" in {
       //Given
       val expectedUrl: String = "http://newurl"
       val shortUrl = shortUrlExistFor(expectedUrl)
@@ -73,22 +74,58 @@ class ShortUrlRegistryTest(_system: ActorSystem) extends PersistenceSpec(_system
       expected should be(shortUrl)
     }
 
-    "Recover its state upon restart" in {
+    "keep access stats for each token/url" in {
       //Given
       val expectedUrl: String = "http://newurl"
-      val tempActorRef = system.actorOf(ShortUrlRegistry.props(), "UrlRegistryTemp")
+      val shortUrl = shortUrlExistFor(expectedUrl)
+      actorRef ! ResolveToken(shortUrl.token)
+      receiveOne(msgDefaultWait)
+      //When
+      actorRef ! ReadStats(shortUrl.token)
+      val expected = receiveOne(msgDefaultWait)
+      //Then
+      expected should be(UrlStatFound(1))
+    }
+
+    "Recover its url cache upon restart" in {
+      //Given
+      val expectedUrl: String = "http://newurl"
+      val name: String = s"UrlRegistry-${Random.nextInt()}"
+      val tempActorRef = system.actorOf(ShortUrlRegistry.props(), name)
       val shortUrl = shortUrlExistFor(expectedUrl, tempActorRef)
       tempActorRef ! ReceiveTimeout //kill existing actor
       receiveOne(msgDefaultWait)
       watch(tempActorRef)
       tempActorRef ! PoisonPill
       expectTerminated(tempActorRef)
-      val recoveredActorRef = system.actorOf(ShortUrlRegistry.props(), "UrlRegistryTemp")
+      val recoveredActorRef = system.actorOf(ShortUrlRegistry.props(), name)
       //When
       recoveredActorRef ! ResolveToken(shortUrl.token)
       val ShortUrlFound(expected) = receiveOne(msgDefaultWait)
       //Then
       expected should be(shortUrl)
+
+    }
+
+    "Recover its url stats upon restart" in {
+      //Given
+      val expectedUrl: String = "http://newurl"
+      val name: String = s"UrlRegistry-${Random.nextInt()}"
+      val tempActorRef = system.actorOf(ShortUrlRegistry.props(), name)
+      val shortUrl = shortUrlExistFor(expectedUrl, tempActorRef)
+      tempActorRef ! ResolveToken(shortUrl.token)
+      tempActorRef ! ReceiveTimeout //kill existing actor
+      receiveOne(msgDefaultWait)
+      watch(tempActorRef)
+      tempActorRef ! PoisonPill
+      expectTerminated(tempActorRef)
+      val recoveredActorRef = system.actorOf(ShortUrlRegistry.props(), name)
+      //When
+      recoveredActorRef ! ReadStats(shortUrl.token)
+      val expected = receiveOne(msgDefaultWait)
+      //Then
+      expected should be(UrlStatFound(1))
+
     }
   }
 

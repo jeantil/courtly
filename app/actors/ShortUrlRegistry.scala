@@ -8,39 +8,59 @@ import akka.contrib.pattern.ShardRegion.Passivate
 import concurrent.duration._
 import model.domain.ShortUrl
 import model.event._
-import model.command.ShortenUrl
+import model.query.ReadStats
 import model.query.ResolveToken
+import model.command.ShortenUrl
 import play.api.libs.json.{ Json, JsValue }
 import akka.persistence.SnapshotOffer
 import akka.persistence.SaveSnapshotSuccess
 
 class ShortUrlRegistry(receiveTimeout: Duration) extends EventsourcedProcessor with Snapshotter with ActorLogging {
+  private var state = new PersistentState()
+  type UrlCache = Map[String, ShortUrl]
+  type TokenCache = Map[String, ShortUrl]
+
+  case class PersistentState(_registeredUrls: UrlCache = Map(), _registeredTokens: TokenCache = Map()) {
+    def registeredUrls = _registeredUrls
+    def registeredTokens = _registeredTokens
+    def registerShortUrl(shortUrl: ShortUrl): PersistentState = {
+      copy(_registeredUrls = _registeredUrls.updated(shortUrl.target, shortUrl),
+        _registeredTokens = _registeredTokens.updated(shortUrl.token, shortUrl))
+    }
+    def registerAccess(event: Event) = event match {
+      case ShortUrlFound(shortUrl) => registerShortUrl(shortUrl.incrementAccessCount)
+      case _                       => this
+    }
+  }
+  object PersistentState {
+    implicit val PersistentStateFormat = Json.format[PersistentState]
+  }
 
   context.setReceiveTimeout(receiveTimeout)
 
-  private var registeredUrls = Map[String, ShortUrl]()
-  private var registeredTokens = Map[String, ShortUrl]()
   private var stopping = false
-  private def registerShortUrl(shortUrl: ShortUrl) = {
-    registeredUrls = registeredUrls.updated(shortUrl.target, shortUrl)
-    registeredTokens = registeredTokens.updated(shortUrl.token, shortUrl)
-  }
 
   override def receiveCommand: ShortUrlRegistry#Receive = {
     case c @ ShortenUrl(target) =>
       log.debug(s"received $c")
-      registeredUrls.get(target) map (sender ! ShortUrlCreated(_)) getOrElse persist(ShortUrlCreated(ShortUrl(target)))({
+      state.registeredUrls.get(target) map (sender ! ShortUrlCreated(_)) getOrElse persist(ShortUrlCreated(ShortUrl(target)))({
         shortUrlCreated =>
-          registerShortUrl(shortUrlCreated.shortUrl)
+          state = state.registerShortUrl(shortUrlCreated.shortUrl)
           sender ! shortUrlCreated
       })
-    case c @ ResolveToken(token) =>
-      log.debug(s"received $c")
-      val event = registeredTokens.get(token) map ShortUrlFound getOrElse ShortUrlNotFound
+    case q @ ResolveToken(token) =>
+      log.debug(s"received $q")
+      val event = state.registeredTokens.get(token) map ShortUrlFound getOrElse ShortUrlNotFound
+      persist(event)(e => {
+        state = state.registerAccess(e)
+        sender ! e
+      })
+    case q @ ReadStats(token) =>
+      val event = state.registeredTokens.get(token) map (su => UrlStatFound(su.accessCount)) getOrElse UrlStatNotFound
       sender ! event
     case ReceiveTimeout =>
       stopping = true
-      saveSnapshot(Json.obj("registeredUrls" -> registeredUrls, "registeredTokens" -> registeredTokens))
+      saveSnapshot(Json.toJson(state))
     case saved: SaveSnapshotSuccess =>
       if (stopping) context.parent ! Passivate(stopMessage = PoisonPill)
     case r => log.warning(s"received unknown message $r")
@@ -49,16 +69,24 @@ class ShortUrlRegistry(receiveTimeout: Duration) extends EventsourcedProcessor w
   override def receiveRecover: ShortUrlRegistry#Receive = {
     case e @ ShortUrlCreated(shortUrl) =>
       log.info(s"Recovering state from event $e")
-      registerShortUrl(shortUrl)
+      state.registerShortUrl(shortUrl)
+    case e @ ShortUrlFound(shortUrl) =>
+      log.info(s"Recovering state from event $e")
+      state.registerAccess(e)
     case s @ SnapshotOffer(metadata, snapshot: JsValue) =>
       log.info(s"Recovering state from snapshot $s")
-      registeredUrls = (snapshot \ "registeredUrls").as[Map[String, ShortUrl]]
-      registeredTokens = (snapshot \ "registeredTokens").as[Map[String, ShortUrl]]
+      state = snapshot.validate[PersistentState].fold(
+        errors => {
+          log.error(s"Ignore invalid state snapshot $s ")
+          state
+        },
+        newState => newState
+      )
     case r => log.warning(s"receivedRecover unknown message $r")
   }
 }
-object ShortUrlRegistry {
 
+object ShortUrlRegistry {
   import akka.actor.Props
   def path = s"/user/$name"
   def name = "ShortUrlRegistry"

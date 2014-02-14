@@ -5,24 +5,27 @@ trait Base62TokenBuilder {
   def apply(uuidGen: () => UUID = UUID.randomUUID): String
 }
 
-case class ShortUrl(target: String, token: String)
+case class ShortUrl(target: String, token: String, accessCount: Int = 0) {
+  def incrementAccessCount = copy(accessCount = 1)
+}
 
 object ShortUrl {
 
   import play.api.libs.json._
   import play.api.libs.functional.syntax._
 
-  implicit val ShortUrlFormat = new Format[ShortUrl] {
+  implicit val ShortUrlFormat: Format[ShortUrl] = new Format[ShortUrl] {
     val format = (
       (__ \ "target").format[String] and
-      (__ \ "token").format[String]
-    )((target, token) => ShortUrl.apply(target, token), unlift(ShortUrl.unapply))
+      (__ \ "token").format[String] and
+      (__ \ "accessCount").format[Int]
+    )((target, token, accessCount) => ShortUrl.apply(target, token, accessCount), unlift(ShortUrl.unapply))
 
     override def writes(o: ShortUrl): JsValue = format.writes(o)
     override def reads(json: JsValue): JsResult[ShortUrl] = format.reads(json)
   }
-  def apply(target: String, token: Base62TokenBuilder = Base62Token) = {
-    new ShortUrl(target, token())
+  def apply(target: String) = {
+    new ShortUrl(target, Base62Token())
   }
 
   private[ShortUrl] case class Base62Token(token: String) extends AnyVal
