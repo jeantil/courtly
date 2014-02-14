@@ -6,7 +6,7 @@ trait Base62TokenBuilder {
 }
 
 case class ShortUrl(target: String, token: String, accessCount: Int = 0) {
-  def incrementAccessCount = copy(accessCount = 1)
+  def incrementAccessCount = copy(accessCount = accessCount + 1)
 }
 
 object ShortUrl {

@@ -13,8 +13,8 @@ class ShortUrlSpec extends Specification with ShouldMatchers {
     }
     "increment accessCount" in {
       val urlToShorten: String = "http://www.google.com"
-      val shortUrl = ShortUrl(urlToShorten).incrementAccessCount
-      shortUrl.accessCount === 1
+      val shortUrl = ShortUrl(urlToShorten).incrementAccessCount.incrementAccessCount.incrementAccessCount
+      shortUrl.accessCount === 3
     }
   }
 }
