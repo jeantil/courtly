@@ -15,10 +15,13 @@
 
     <logger name="play" level="INFO" />
     <logger name="application" level="INFO" />
-    <logger name="application.actors" level="DEBUG" />
+    <logger name="application.controllers" level="DEBUG" />
+    <logger name="actors" level="DEBUG" />
     <logger name="application.models" level="INFO" />
     <logger name="application.filters" level="INFO" />
     <logger name="application.services" level="INFO" />
+
+    <logger name="akka" level="DEBUG" />
 
     <root level="ERROR">
         <appender-ref ref="STDOUT" />
