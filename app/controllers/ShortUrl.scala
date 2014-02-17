@@ -26,7 +26,7 @@ abstract class ShortUrl extends Controller with PlayLogging with DomainAsker {
   def resolve(token: String) = Action.async { request =>
     (domain.shortUrlRegistry ? ResolveToken(token)) map {
       case ShortUrlNotFound        => NotFound
-      case ShortUrlFound(shortUrl) => MovedPermanently(shortUrl.target)
+      case ShortUrlFound(shortUrl) => TemporaryRedirect(shortUrl.target)
       case m =>
         log.debug(s"Unable to resolve a target url for $token. Domain returned $m")
         BadRequest
