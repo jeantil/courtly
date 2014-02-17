@@ -57,7 +57,7 @@ class ShortUrlRegistry(receiveTimeout: Duration) extends EventsourcedProcessor w
       })
     case q @ ReadTokenStats(token) =>
       val event = state.registeredTokens.get(token) map (su => UrlStatFound(su.accessCount)) getOrElse UrlStatNotFound
-      persist(event)(e => { sender ! event})
+      persist(event)(e => { sender ! event })
     case ReceiveTimeout =>
       stopping = true
       saveSnapshot(Json.toJson(state))
