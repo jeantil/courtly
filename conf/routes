@@ -13,3 +13,4 @@ POST        /api/shorten               controllers.ShortUrl.shorten
 ## Static resources
 GET         /                          controllers.Assets.at(path="/public", file="index.html")
 GET         /public/*file              controllers.Assets.at(path="/public", file)
+GET         /*token                    controllers.ShortUrl.resolve(token:String)
