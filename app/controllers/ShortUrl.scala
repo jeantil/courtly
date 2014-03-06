@@ -20,8 +20,13 @@ abstract class ShortUrl extends Controller with PlayLogging {
       errors => Future.successful(jsonErrors2BadRequest(errors, log)),
       target => {
         shortUrlDao.findByTarget(target)
-          .recoverWith { case t: NoSuchElementException => createShortUrl(target) }
-          .map(value => Ok(Json.toJson(value)))
+          .recoverWith {
+            case t: NoSuchElementException =>
+              val result = createShortUrl(target)
+              result.onSuccess { case createdShortUrl => log.info(s"${request.remoteAddress} accessed $request -> $createdShortUrl ") }
+              result
+          }
+          .map(shortUrl => Ok(controllers.routes.ShortUrl.resolve(shortUrl.token.value).absoluteURL(sslEnabled)))
           .recover {
             case throwable =>
               log.warn(s"Unable to resolve a target url for $target.", throwable)
@@ -35,7 +40,9 @@ abstract class ShortUrl extends Controller with PlayLogging {
     val token = tokenLength map (l => tokenGenerator.generateToken(length = l)) getOrElse tokenGenerator.generateToken()
     val shortUrl: model.ShortUrl = model.ShortUrl(target, token)
     val fShortUrl = shortUrlDao.create(shortUrl)
-    fShortUrl.recoverWith { case t: DatabaseException if recurseCount < 10 => createShortUrl(target, recurseCount + 1, tokenLength = Some(token.length)) }
+    fShortUrl
+      .recoverWith { case t: DatabaseException if recurseCount < 10 => createShortUrl(target, recurseCount + 1, tokenLength = Some(token.length)) }
+
   }
 
   def resolve(token: String) = Action.async { request =>
@@ -43,6 +50,7 @@ abstract class ShortUrl extends Controller with PlayLogging {
       shortUrl <- shortUrlDao.findByToken(Token(token))
       accessedShortUrl <- shortUrlDao.incrementAccessCount(shortUrl)
     } yield {
+      log.info(s"${request.remoteAddress} accessed $request -> $accessedShortUrl ")
       TemporaryRedirect(accessedShortUrl.target)
     }
     result.recover {

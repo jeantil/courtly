@@ -5,7 +5,6 @@
 
 # Default path will just redirect to the computer list
 GET         /api/ping                  controllers.Application.ping
-GET         /api/resolve/:token        controllers.ShortUrl.resolve(token:String)
 GET         /api/stats/:token          controllers.ShortUrl.stats(token:String)
 POST        /api/shorten               controllers.ShortUrl.shorten
 
