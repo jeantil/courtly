@@ -3,7 +3,6 @@ import sbt._
 object Dependencies {
 
   object Runtime {
-    val secure_social = "securesocial" %% "securesocial" % "2.1.2"
     val reactivemongo="org.reactivemongo" %% "play2-reactivemongo" % "0.10.2" exclude("org.apache.logging.log4j","log4j-core")
 
     val dependencies = Seq(

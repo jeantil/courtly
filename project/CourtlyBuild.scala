@@ -25,11 +25,12 @@ object CourtlyBuild extends Build {
       , incOptions := incOptions.value.withNameHashing(true)
       , buildInfoPackage := "io.courtly"
     ) ++ Format.settings
+
   val excludes = Seq("sbt-web","sbt-webdriver","sbt-js-engine")
   lazy val main = Project(appName,file(".")).settings(appSettings:_*).settings(
     libraryDependencies <<= libraryDependencies.apply { deps =>
       deps.map { dep => dep.exclude("com.typesafe","sbt-web").exclude("com.typesafe","sbt-webdriver").exclude("com.typesafe","sbt-js-engine")}
     }
-  )
+  ).settings(Publish.settings: _*)
 
 }
