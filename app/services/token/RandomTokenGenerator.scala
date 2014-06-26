@@ -4,7 +4,7 @@ import scala.util.Random
 import services.TokenGenerator
 import model.Token
 
-class RandomTokenGenerator(minLength: Int, maxLength: Int,randomGen: Random = Random) extends TokenGenerator {
+class RandomTokenGenerator(minLength: Int, maxLength: Int, randomGen: Random = Random) extends TokenGenerator {
   override def generateToken(value: String = "", length: Int = minLength): Token = {
     val bound = Math.min(length, maxLength)
     val tokenString = (0 until bound).foldLeft("") { (acc, v) => acc + TokenAlphabets.ALPHABET_62(randomGen.nextInt(TokenAlphabets.ALPHABET_62.length)) }

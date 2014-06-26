@@ -1,10 +1,12 @@
 package controllers
 
-import play.api
+import java.net.URL
+
 import play.api.mvc._
 import play.api.libs.json.Json
 import play.api.Logger
 import scala.concurrent.Future
+
 import services.persistence.ShortUrlDao
 import model.Token
 import services.TokenGenerator
@@ -40,9 +42,7 @@ abstract class ShortUrl extends Controller with PlayLogging {
     val token = tokenLength map (l => tokenGenerator.generateToken(length = l)) getOrElse tokenGenerator.generateToken()
     val shortUrl: model.ShortUrl = model.ShortUrl(target, token)
     val fShortUrl = shortUrlDao.create(shortUrl)
-    fShortUrl
-      .recoverWith { case t: DatabaseException if recurseCount < 10 => createShortUrl(target, recurseCount + 1, tokenLength = Some(token.length)) }
-
+    fShortUrl.recoverWith { case t: DatabaseException if recurseCount < 10 => createShortUrl(target, recurseCount + 1, tokenLength = Some(token.length)) }
   }
 
   def resolve(token: String) = Action.async { request =>
@@ -51,7 +51,7 @@ abstract class ShortUrl extends Controller with PlayLogging {
       accessedShortUrl <- shortUrlDao.incrementAccessCount(shortUrl)
     } yield {
       log.info(s"${request.remoteAddress} accessed $request -> $accessedShortUrl ")
-      TemporaryRedirect(accessedShortUrl.target)
+      TemporaryRedirect(new java.net.URI(accessedShortUrl.target).toASCIIString)
     }
     result.recover {
       case throwable =>
@@ -81,4 +81,5 @@ object ShortUrl extends ShortUrl() {
   override protected implicit def app: api.Application = api.Play.current
   override def shortUrlDao: ShortUrlDao = ShortUrlRxMongoDao
   override def tokenGenerator = RandomTokenGenerator()
+
 }
