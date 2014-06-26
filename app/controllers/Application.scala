@@ -13,7 +13,7 @@ trait Application extends Controller {
 
   def ping = Action { implicit request =>
     val startTime = System.currentTimeMillis()
-    val mongoping = Await.result(ShortUrlRxMongoDao.findFirst().map(_= System.currentTimeMillis() - startTime ), 10.seconds)
+    val mongoping = Await.result(ShortUrlRxMongoDao.findFirst().map(_ => System.currentTimeMillis() - startTime), 10.seconds)
     Ok(play.api.libs.json.Json.obj(
       "name" -> io.courtly.BuildInfo.name,
       "version" -> io.courtly.BuildInfo.version,
