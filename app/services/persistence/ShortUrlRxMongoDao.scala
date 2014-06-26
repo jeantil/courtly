@@ -4,7 +4,7 @@ import model._
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoPlugin
 import play.modules.reactivemongo.json.collection.JSONCollection
-import reactivemongo.api.DefaultDB
+import reactivemongo.api.{QueryOpts, DefaultDB}
 import scala.concurrent.{ ExecutionContext, Future }
 
 trait ShortUrlDao {
@@ -47,6 +47,10 @@ trait ShortUrlRxMongoDao extends ShortUrlDao with ShortUrlPersistenceFormats {
       case Some(shortUrl) => shortUrl
       case None           => throw new NoSuchElementException()
     }
+  }
+
+  def findFirst():Future[Option[ShortUrl]] = {
+    shortUrls.find(Json.obj()).one[ShortUrl]
   }
 }
 
